@@ -10,19 +10,22 @@ REST API manajemen tugas mahasiswa. Tabel bersama: `users`. Tiap anggota memegan
 | 4 | `schedules` | `Schedule` / `ScheduleController` | `2026_11_23_032700_create_schedules_table` |
 | Bersama | `users` | `User` / `AuthController` / `ApiResponse` / `RoleMiddleware` | bawaan Laravel + `add_role_to_users_table` |
 
-ERD: `docs/ERD.png` (sumber `docs/ERD.mmd`). Postman: `docs/TA-TST.postman_collection.json`.
+ERD: `docs/ERD.png` (sumber `docs/ERD.mmd`). Postman: `docs/TA-TST.postman_collection.json` dan environment `docs/TA-TST.postman_environment.json`.
+Daftar endpoint lengkap, kredensial uji, dan nama database ada di `INFO_KELOMPOK4.txt`.
 
 ## Setup (sekali per mesin)
 
+Package JWT (`php-open-source-saver/jwt-auth`) dan `config/jwt.php` sudah ada di proyek, jadi cukup:
+
 ```bash
 composer install
-composer remove laravel/sanctum                      # tidak dipakai (materi memakai JWT)
-composer require php-open-source-saver/jwt-auth
-php artisan vendor:publish --provider="PHPOpenSourceSaver\JWTAuth\Providers\LaravelServiceProvider"
-cp .env.example .env
+copy .env.example .env               # lewati jika file .env sudah ada (di ZIP pengumpulan sudah disertakan)
 php artisan key:generate
 php artisan jwt:secret
 ```
+
+Opsional (kerapian): Sanctum tidak dipakai karena materi memakai JWT. Jika ingin dibersihkan, jalankan
+`composer remove laravel/sanctum`, lalu hapus `config/sanctum.php` dan migration `create_personal_access_tokens_table`.
 
 Buat database `ta_tst` di phpMyAdmin (utf8mb4_unicode_ci), lalu:
 
@@ -67,5 +70,5 @@ Ingin user boleh menghapus data miliknya sendiri? Pindahkan route DELETE keluar 
 
 * **route:list / migrate:status / struktur tabel**: `php artisan route:list --path=api`, `php artisan migrate:status`, `php artisan db:table tasks` (dst.).
 * **Jumlah query**: saat `APP_DEBUG=true` tiap response punya header `X-Query-Count` (tab *Headers* di Postman). Angka sudah termasuk 1 query user dari token. Untuk membandingkan, hapus sementara `->with(...)` di `index()` lalu kirim ulang.
-* **500**: matikan MySQL, jalankan folder 5 di Postman, lalu tunjukkan `laravel.log`.
-* **Collection**: jalankan folder 0 → 1 → 2 → 3 → 4 (Collection Runner). Variabel token/id terisi otomatis.
+* **500**: matikan MySQL, jalankan folder 7 di Postman, lalu tunjukkan `laravel.log`.
+* **Collection**: import collection dan environment `TA-TST Local`, pilih environment itu, lalu jalankan folder 0 sampai 6 (Collection Runner): 0 Health Check, 1 Authentication, 2 Tasks, 3 Categories, 4 Notes, 5 Schedules, 6 Authorization dan Ownership. Variabel `admin_token`, `user_token`, dan id data terisi otomatis sebagai environment variable. Folder 7 hanya uji manual untuk response 500.

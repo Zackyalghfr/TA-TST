@@ -8,8 +8,13 @@ use App\Http\Controllers\TaskController;
 use Illuminate\Support\Facades\Route;
 
 
+// Endpoint publik: memakai bentuk response standar yang sama dengan ApiResponse
 Route::get('/ping', function () {
-    return ['message' => 'API Laravel berjalan'];
+    return response()->json([
+        'success' => true,
+        'message' => 'API Laravel berjalan',
+        'data'    => null,
+    ]);
 });
 
 Route::post('/register', [AuthController::class, 'register']);

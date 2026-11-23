@@ -1,8 +1,8 @@
 {
   "info": {
     "_postman_id": "8c1dddd0-34c7-4490-97f6-afd153deca07",
-    "name": "TA TST - Task Manager API (JWT + RBAC)",
-    "description": "REST API Laravel: users, tasks, categories, notes, schedules.\n\nCara pakai:\n1. php artisan migrate --seed  &&  php artisan serve\n2. Import collection ini, jalankan folder 0 lebih dulu (mengisi token_admin, token_user, token_user2).\n3. Jalankan folder 1-4 berurutan (Collection Runner) atau satu per satu.\n4. Folder 5 hanya untuk uji manual: matikan MySQL dulu agar response 500 muncul.\n\nVariabel base_url dapat diubah pada tab Variables.",
+    "name": "TA TST - Task Manager API (JWT + RBAC) - Kelompok 4",
+    "description": "REST API Laravel: users, tasks, categories, notes, schedules.\n\nCara pakai:\n1. php artisan migrate:fresh --seed  lalu  php artisan serve\n2. Import collection dan environment \"TA-TST Local\", lalu PILIH environment itu di pojok kanan atas Postman.\n3. Jalankan folder 0 sampai 6 berurutan (Collection Runner). Folder 1 mengisi admin_token, user_token, user2_token.\n4. Folder 7 hanya uji manual: matikan MySQL dulu agar response 500 muncul.\n\nToken disimpan sebagai environment variable saat runtime, tidak ditulis permanen di file.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "auth": {
@@ -10,7 +10,7 @@
     "bearer": [
       {
         "key": "token",
-        "value": "{{token_user}}",
+        "value": "{{user_token}}",
         "type": "string"
       }
     ]
@@ -30,71 +30,11 @@
     {
       "key": "base_url",
       "value": "http://127.0.0.1:8000/api"
-    },
-    {
-      "key": "token_admin",
-      "value": ""
-    },
-    {
-      "key": "token_user",
-      "value": ""
-    },
-    {
-      "key": "token_user2",
-      "value": ""
-    },
-    {
-      "key": "email_user",
-      "value": ""
-    },
-    {
-      "key": "email_user2",
-      "value": ""
-    },
-    {
-      "key": "user_id",
-      "value": ""
-    },
-    {
-      "key": "category_id",
-      "value": ""
-    },
-    {
-      "key": "category_id_del",
-      "value": ""
-    },
-    {
-      "key": "category_name",
-      "value": ""
-    },
-    {
-      "key": "task_id",
-      "value": ""
-    },
-    {
-      "key": "task_id_del",
-      "value": ""
-    },
-    {
-      "key": "note_id",
-      "value": ""
-    },
-    {
-      "key": "note_id_del",
-      "value": ""
-    },
-    {
-      "key": "schedule_id",
-      "value": ""
-    },
-    {
-      "key": "schedule_id_del",
-      "value": ""
     }
   ],
   "item": [
     {
-      "name": "0. Auth (Bersama - tabel users)",
+      "name": "0. Health Check",
       "item": [
         {
           "name": "Ping (200)",
@@ -105,7 +45,9 @@
                 "type": "text/javascript",
                 "exec": [
                   "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
-                  "pm.test(\"API berjalan\", () => pm.expect(pm.response.json().message).to.eql(\"API Laravel berjalan\"));"
+                  "const j = pm.response.json();",
+                  "pm.test(\"Bentuk response standar sukses\", () => { pm.expect(j.success).to.eql(true); pm.expect(j).to.have.property(\"message\"); pm.expect(j).to.have.property(\"data\"); });",
+                  "pm.test(\"API berjalan\", () => pm.expect(j.message).to.eql(\"API Laravel berjalan\"));"
                 ]
               }
             }
@@ -126,7 +68,12 @@
               ]
             }
           }
-        },
+        }
+      ]
+    },
+    {
+      "name": "1. Authentication",
+      "item": [
         {
           "name": "Register user 1 (201)",
           "event": [
@@ -135,8 +82,8 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.collectionVariables.set(\"email_user\", \"andi_\" + Date.now() + \"@example.com\");",
-                  "pm.collectionVariables.set(\"email_user2\", \"budi_\" + Date.now() + \"@example.com\");"
+                  "pm.environment.set(\"email_user\", \"andi_\" + Date.now() + \"@example.com\");",
+                  "pm.environment.set(\"email_user2\", \"budi_\" + Date.now() + \"@example.com\");"
                 ]
               }
             },
@@ -150,8 +97,8 @@
                   "pm.test(\"success = true\", () => pm.expect(j.success).to.eql(true));",
                   "pm.test(\"Bentuk response standar\", () => { pm.expect(j).to.have.property(\"message\"); pm.expect(j).to.have.property(\"data\"); });",
                   "pm.test(\"role = user, password tidak tampil\", () => { pm.expect(j.data.user.role).to.eql(\"user\"); pm.expect(pm.response.text()).to.not.include(\"password\"); });",
-                  "pm.collectionVariables.set(\"token_user\", j.data.access_token);",
-                  "pm.collectionVariables.set(\"user_id\", j.data.user.id);"
+                  "pm.environment.set(\"user_token\", j.data.access_token);",
+                  "pm.environment.set(\"user_id\", j.data.user.id);"
                 ]
               }
             }
@@ -199,7 +146,8 @@
                   "const j = pm.response.json();",
                   "pm.test(\"success = true\", () => pm.expect(j.success).to.eql(true));",
                   "pm.test(\"Bentuk response standar\", () => { pm.expect(j).to.have.property(\"message\"); pm.expect(j).to.have.property(\"data\"); });",
-                  "pm.collectionVariables.set(\"token_user2\", j.data.access_token);"
+                  "pm.environment.set(\"user2_token\", j.data.access_token);",
+                  "pm.environment.set(\"user2_id\", j.data.user.id);"
                 ]
               }
             }
@@ -342,7 +290,7 @@
                   "const j = pm.response.json();",
                   "pm.test(\"success = true\", () => pm.expect(j.success).to.eql(true));",
                   "pm.test(\"Bentuk response standar\", () => { pm.expect(j).to.have.property(\"message\"); pm.expect(j).to.have.property(\"data\"); });",
-                  "pm.collectionVariables.set(\"token_admin\", j.data.access_token);"
+                  "pm.environment.set(\"admin_token\", j.data.access_token);"
                 ]
               }
             }
@@ -392,7 +340,7 @@
                   "pm.test(\"success = true\", () => pm.expect(j.success).to.eql(true));",
                   "pm.test(\"Bentuk response standar\", () => { pm.expect(j).to.have.property(\"message\"); pm.expect(j).to.have.property(\"data\"); });",
                   "pm.test(\"token_type Bearer\", () => pm.expect(j.data.token_type).to.eql(\"Bearer\"));",
-                  "pm.collectionVariables.set(\"token_user\", j.data.access_token);"
+                  "pm.environment.set(\"user_token\", j.data.access_token);"
                 ]
               }
             }
@@ -604,7 +552,7 @@
               "bearer": [
                 {
                   "key": "token",
-                  "value": "{{token_user}}",
+                  "value": "{{user_token}}",
                   "type": "string"
                 }
               ]
@@ -683,180 +631,43 @@
               ]
             }
           }
-        }
-      ],
-      "description": "Registrasi, login (JWT), /me. Jalankan paling awal."
-    },
-    {
-      "name": "1. Anggota 2 - Categories",
-      "item": [
+        },
         {
-          "name": "POST kategori A (201)",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test(\"Status 201\", () => pm.response.to.have.status(201));",
-                  "const j = pm.response.json();",
-                  "pm.test(\"success = true\", () => pm.expect(j.success).to.eql(true));",
-                  "pm.test(\"Bentuk response standar\", () => { pm.expect(j).to.have.property(\"message\"); pm.expect(j).to.have.property(\"data\"); });",
-                  "pm.collectionVariables.set(\"category_id\", j.data.id);"
-                ]
-              }
-            }
-          ],
+          "name": "Login user 1 - token khusus logout (200)",
           "request": {
             "method": "POST",
             "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
               {
                 "key": "Content-Type",
                 "value": "application/json"
               }
             ],
             "url": {
-              "raw": "{{base_url}}/categories",
+              "raw": "{{base_url}}/login",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
-                "categories"
+                "login"
               ]
+            },
+            "auth": {
+              "type": "noauth"
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"Kuliah {{$timestamp}}\",\n  \"description\": \"Tugas perkuliahan\"\n}",
+              "raw": "{\n  \"email\": \"{{email_user}}\",\n  \"password\": \"rahasia123\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
                 }
               }
-            },
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{token_user}}",
-                  "type": "string"
-                }
-              ]
             }
-          }
-        },
-        {
-          "name": "POST kategori B untuk dihapus (201)",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test(\"Status 201\", () => pm.response.to.have.status(201));",
-                  "const j = pm.response.json();",
-                  "pm.test(\"success = true\", () => pm.expect(j.success).to.eql(true));",
-                  "pm.test(\"Bentuk response standar\", () => { pm.expect(j).to.have.property(\"message\"); pm.expect(j).to.have.property(\"data\"); });",
-                  "pm.collectionVariables.set(\"category_id_del\", j.data.id);"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{base_url}}/categories",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "categories"
-              ]
-            },
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"name\": \"Sementara {{$timestamp}}\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            },
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{token_user}}",
-                  "type": "string"
-                }
-              ]
-            }
-          }
-        },
-        {
-          "name": "POST kategori - 422 name kosong",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test(\"Status 422\", () => pm.response.to.have.status(422));",
-                  "const j = pm.response.json();",
-                  "pm.test(\"success = false\", () => pm.expect(j.success).to.eql(false));",
-                  "pm.test(\"Bentuk response standar\", () => { pm.expect(j).to.have.property(\"message\"); pm.expect(j).to.have.property(\"errors\"); });",
-                  "pm.test(\"errors berisi name\", () => pm.expect(j.errors).to.have.property(\"name\"));"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{base_url}}/categories",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "categories"
-              ]
-            },
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"name\": \"\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            },
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{token_user}}",
-                  "type": "string"
-                }
-              ]
-            }
-          }
-        },
-        {
-          "name": "GET daftar kategori (200)",
+          },
           "event": [
             {
               "listen": "test",
@@ -865,24 +676,30 @@
                 "exec": [
                   "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
                   "const j = pm.response.json();",
-                  "pm.test(\"success = true\", () => pm.expect(j.success).to.eql(true));",
-                  "pm.test(\"Bentuk response standar\", () => { pm.expect(j).to.have.property(\"message\"); pm.expect(j).to.have.property(\"data\"); });",
-                  "pm.test(\"data array, ada tasks_count & user\", () => { pm.expect(j.data).to.be.an(\"array\"); pm.expect(j.data[0]).to.have.property(\"tasks_count\"); pm.expect(j.data[0]).to.have.property(\"user\"); });",
-                  "pm.test(\"Tidak ada data sensitif (password)\", () => pm.expect(pm.response.text()).to.not.include(\"password\"));"
+                  "pm.test(\"Bentuk response standar sukses\", () => { pm.expect(j.success).to.eql(true); pm.expect(j).to.have.property(\"message\"); pm.expect(j).to.have.property(\"data\"); });",
+                  "pm.environment.set(\"logout_token\", j.data.access_token);"
                 ]
               }
             }
-          ],
+          ]
+        },
+        {
+          "name": "Logout (200)",
           "request": {
-            "method": "GET",
-            "header": [],
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
             "url": {
-              "raw": "{{base_url}}/categories",
+              "raw": "{{base_url}}/logout",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
-                "categories"
+                "logout"
               ]
             },
             "auth": {
@@ -890,15 +707,12 @@
               "bearer": [
                 {
                   "key": "token",
-                  "value": "{{token_user}}",
+                  "value": "{{logout_token}}",
                   "type": "string"
                 }
               ]
             }
-          }
-        },
-        {
-          "name": "GET kategori by id (200)",
+          },
           "event": [
             {
               "listen": "test",
@@ -907,25 +721,29 @@
                 "exec": [
                   "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
                   "const j = pm.response.json();",
-                  "pm.test(\"success = true\", () => pm.expect(j.success).to.eql(true));",
-                  "pm.test(\"Bentuk response standar\", () => { pm.expect(j).to.have.property(\"message\"); pm.expect(j).to.have.property(\"data\"); });",
-                  "pm.test(\"ada relasi tasks\", () => pm.expect(j.data).to.have.property(\"tasks\"));",
-                  "pm.test(\"Tidak ada data sensitif (password)\", () => pm.expect(pm.response.text()).to.not.include(\"password\"));"
+                  "pm.test(\"Bentuk response standar sukses\", () => { pm.expect(j.success).to.eql(true); pm.expect(j).to.have.property(\"message\"); pm.expect(j).to.have.property(\"data\"); });"
                 ]
               }
             }
-          ],
+          ]
+        },
+        {
+          "name": "Me setelah logout - 401 token masuk blacklist",
           "request": {
             "method": "GET",
-            "header": [],
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
             "url": {
-              "raw": "{{base_url}}/categories/{{category_id}}",
+              "raw": "{{base_url}}/me",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
-                "categories",
-                "{{category_id}}"
+                "me"
               ]
             },
             "auth": {
@@ -933,139 +751,12 @@
               "bearer": [
                 {
                   "key": "token",
-                  "value": "{{token_user}}",
+                  "value": "{{logout_token}}",
                   "type": "string"
                 }
               ]
             }
-          }
-        },
-        {
-          "name": "GET kategori - 404 id tidak ada",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test(\"Status 404\", () => pm.response.to.have.status(404));",
-                  "const j = pm.response.json();",
-                  "pm.test(\"success = false\", () => pm.expect(j.success).to.eql(false));",
-                  "pm.test(\"Bentuk response standar\", () => { pm.expect(j).to.have.property(\"message\"); pm.expect(j).to.have.property(\"errors\"); });"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{base_url}}/categories/999999",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "categories",
-                "999999"
-              ]
-            },
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{token_user}}",
-                  "type": "string"
-                }
-              ]
-            }
-          }
-        },
-        {
-          "name": "GET kategori - 404 id bukan angka",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test(\"Status 404\", () => pm.response.to.have.status(404));",
-                  "const j = pm.response.json();",
-                  "pm.test(\"success = false\", () => pm.expect(j.success).to.eql(false));",
-                  "pm.test(\"Bentuk response standar\", () => { pm.expect(j).to.have.property(\"message\"); pm.expect(j).to.have.property(\"errors\"); });"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{base_url}}/categories/abc",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "categories",
-                "abc"
-              ]
-            },
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{token_user}}",
-                  "type": "string"
-                }
-              ]
-            }
-          }
-        },
-        {
-          "name": "GET kategori - 404 milik user lain",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test(\"Status 404\", () => pm.response.to.have.status(404));",
-                  "const j = pm.response.json();",
-                  "pm.test(\"success = false\", () => pm.expect(j.success).to.eql(false));",
-                  "pm.test(\"Bentuk response standar\", () => { pm.expect(j).to.have.property(\"message\"); pm.expect(j).to.have.property(\"errors\"); });"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{base_url}}/categories/{{category_id}}",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "categories",
-                "{{category_id}}"
-              ]
-            },
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{token_user2}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "description": "Kepemilikan data: user 2 tidak boleh melihat kategori milik user 1."
-          }
-        },
-        {
-          "name": "GET kategori - 401 tanpa token",
+          },
           "event": [
             {
               "listen": "test",
@@ -1074,348 +765,35 @@
                 "exec": [
                   "pm.test(\"Status 401\", () => pm.response.to.have.status(401));",
                   "const j = pm.response.json();",
-                  "pm.test(\"success = false\", () => pm.expect(j.success).to.eql(false));",
-                  "pm.test(\"Bentuk response standar\", () => { pm.expect(j).to.have.property(\"message\"); pm.expect(j).to.have.property(\"errors\"); });"
+                  "pm.test(\"Bentuk response standar gagal\", () => { pm.expect(j.success).to.eql(false); pm.expect(j).to.have.property(\"message\"); pm.expect(j).to.have.property(\"errors\"); });"
                 ]
               }
             }
-          ],
+          ]
+        },
+        {
+          "name": "Logout - 401 tanpa token",
           "request": {
-            "method": "GET",
-            "header": [],
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
             "url": {
-              "raw": "{{base_url}}/categories",
+              "raw": "{{base_url}}/logout",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
-                "categories"
+                "logout"
               ]
             },
             "auth": {
               "type": "noauth"
             }
-          }
-        },
-        {
-          "name": "PATCH kategori (200)",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
-                  "const j = pm.response.json();",
-                  "pm.test(\"success = true\", () => pm.expect(j.success).to.eql(true));",
-                  "pm.test(\"Bentuk response standar\", () => { pm.expect(j).to.have.property(\"message\"); pm.expect(j).to.have.property(\"data\"); });"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "PATCH",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{base_url}}/categories/{{category_id}}",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "categories",
-                "{{category_id}}"
-              ]
-            },
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"description\": \"Deskripsi diubah lewat PATCH\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            },
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{token_user}}",
-                  "type": "string"
-                }
-              ]
-            }
-          }
-        },
-        {
-          "name": "PUT kategori (200)",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
-                  "const j = pm.response.json();",
-                  "pm.test(\"success = true\", () => pm.expect(j.success).to.eql(true));",
-                  "pm.test(\"Bentuk response standar\", () => { pm.expect(j).to.have.property(\"message\"); pm.expect(j).to.have.property(\"data\"); });",
-                  "pm.collectionVariables.set(\"category_name\", j.data.name);"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "PUT",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{base_url}}/categories/{{category_id}}",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "categories",
-                "{{category_id}}"
-              ]
-            },
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"name\": \"Kuliah (PUT) {{$timestamp}}\",\n  \"description\": \"Diubah lewat PUT\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            },
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{token_user}}",
-                  "type": "string"
-                }
-              ]
-            }
-          }
-        },
-        {
-          "name": "POST kategori - 422 nama duplikat",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test(\"Status 422\", () => pm.response.to.have.status(422));",
-                  "const j = pm.response.json();",
-                  "pm.test(\"success = false\", () => pm.expect(j.success).to.eql(false));",
-                  "pm.test(\"Bentuk response standar\", () => { pm.expect(j).to.have.property(\"message\"); pm.expect(j).to.have.property(\"errors\"); });"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{base_url}}/categories",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "categories"
-              ]
-            },
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"name\": \"{{category_name}}\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            },
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{token_user}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "description": "Memakai nama kategori A terbaru (disimpan oleh request PUT kategori)."
-          }
-        },
-        {
-          "name": "PATCH kategori - 422 name melebihi 100 karakter",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test(\"Status 422\", () => pm.response.to.have.status(422));",
-                  "const j = pm.response.json();",
-                  "pm.test(\"success = false\", () => pm.expect(j.success).to.eql(false));",
-                  "pm.test(\"Bentuk response standar\", () => { pm.expect(j).to.have.property(\"message\"); pm.expect(j).to.have.property(\"errors\"); });"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "PATCH",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{base_url}}/categories/{{category_id}}",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "categories",
-                "{{category_id}}"
-              ]
-            },
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"name\": \"xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            },
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{token_user}}",
-                  "type": "string"
-                }
-              ]
-            }
-          }
-        },
-        {
-          "name": "PATCH kategori - 404",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test(\"Status 404\", () => pm.response.to.have.status(404));",
-                  "const j = pm.response.json();",
-                  "pm.test(\"success = false\", () => pm.expect(j.success).to.eql(false));",
-                  "pm.test(\"Bentuk response standar\", () => { pm.expect(j).to.have.property(\"message\"); pm.expect(j).to.have.property(\"errors\"); });"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "PATCH",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{base_url}}/categories/999999",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "categories",
-                "999999"
-              ]
-            },
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"name\": \"Tidak ada\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            },
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{token_user}}",
-                  "type": "string"
-                }
-              ]
-            }
-          }
-        },
-        {
-          "name": "DELETE kategori - 403 user biasa",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test(\"Status 403\", () => pm.response.to.have.status(403));",
-                  "const j = pm.response.json();",
-                  "pm.test(\"success = false\", () => pm.expect(j.success).to.eql(false));",
-                  "pm.test(\"Bentuk response standar\", () => { pm.expect(j).to.have.property(\"message\"); pm.expect(j).to.have.property(\"errors\"); });"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "DELETE",
-            "header": [],
-            "url": {
-              "raw": "{{base_url}}/categories/{{category_id_del}}",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "categories",
-                "{{category_id_del}}"
-              ]
-            },
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{token_user}}",
-                  "type": "string"
-                }
-              ]
-            }
-          }
-        },
-        {
-          "name": "DELETE kategori - 401 tanpa token",
+          },
           "event": [
             {
               "listen": "test",
@@ -1424,32 +802,42 @@
                 "exec": [
                   "pm.test(\"Status 401\", () => pm.response.to.have.status(401));",
                   "const j = pm.response.json();",
-                  "pm.test(\"success = false\", () => pm.expect(j.success).to.eql(false));",
-                  "pm.test(\"Bentuk response standar\", () => { pm.expect(j).to.have.property(\"message\"); pm.expect(j).to.have.property(\"errors\"); });"
+                  "pm.test(\"Bentuk response standar gagal\", () => { pm.expect(j.success).to.eql(false); pm.expect(j).to.have.property(\"message\"); pm.expect(j).to.have.property(\"errors\"); });"
                 ]
               }
             }
-          ],
+          ]
+        },
+        {
+          "name": "Me admin (200) - role admin",
           "request": {
-            "method": "DELETE",
-            "header": [],
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
             "url": {
-              "raw": "{{base_url}}/categories/{{category_id_del}}",
+              "raw": "{{base_url}}/me",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
-                "categories",
-                "{{category_id_del}}"
+                "me"
               ]
             },
             "auth": {
-              "type": "noauth"
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
             }
-          }
-        },
-        {
-          "name": "DELETE kategori oleh admin (200)",
+          },
           "event": [
             {
               "listen": "test",
@@ -1458,123 +846,128 @@
                 "exec": [
                   "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
                   "const j = pm.response.json();",
-                  "pm.test(\"success = true\", () => pm.expect(j.success).to.eql(true));",
-                  "pm.test(\"Bentuk response standar\", () => { pm.expect(j).to.have.property(\"message\"); pm.expect(j).to.have.property(\"data\"); });"
+                  "pm.test(\"Bentuk response standar sukses\", () => { pm.expect(j.success).to.eql(true); pm.expect(j).to.have.property(\"message\"); pm.expect(j).to.have.property(\"data\"); });",
+                  "pm.test(\"role = admin\", () => pm.expect(j.data.role).to.eql(\"admin\"));",
+                  "pm.environment.set(\"admin_id\", j.data.id);"
                 ]
               }
             }
-          ],
+          ]
+        },
+        {
+          "name": "Register - role di body diabaikan (tetap user)",
           "request": {
-            "method": "DELETE",
-            "header": [],
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "url": {
-              "raw": "{{base_url}}/categories/{{category_id_del}}",
+              "raw": "{{base_url}}/register",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
-                "categories",
-                "{{category_id_del}}"
+                "register"
               ]
             },
             "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{token_admin}}",
-                  "type": "string"
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Coba Admin\",\n  \"email\": \"coba_{{$timestamp}}@example.com\",\n  \"password\": \"rahasia123\",\n  \"password_confirmation\": \"rahasia123\",\n  \"role\": \"admin\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
                 }
-              ]
+              }
             }
-          }
-        },
-        {
-          "name": "DELETE kategori - 404 sudah terhapus",
+          },
           "event": [
             {
               "listen": "test",
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test(\"Status 404\", () => pm.response.to.have.status(404));",
+                  "pm.test(\"Status 201\", () => pm.response.to.have.status(201));",
                   "const j = pm.response.json();",
-                  "pm.test(\"success = false\", () => pm.expect(j.success).to.eql(false));",
-                  "pm.test(\"Bentuk response standar\", () => { pm.expect(j).to.have.property(\"message\"); pm.expect(j).to.have.property(\"errors\"); });"
+                  "pm.test(\"Bentuk response standar sukses\", () => { pm.expect(j.success).to.eql(true); pm.expect(j).to.have.property(\"message\"); pm.expect(j).to.have.property(\"data\"); });",
+                  "pm.test(\"role tetap user\", () => pm.expect(j.data.user.role).to.eql(\"user\"));"
                 ]
               }
             }
-          ],
-          "request": {
-            "method": "DELETE",
-            "header": [],
-            "url": {
-              "raw": "{{base_url}}/categories/{{category_id_del}}",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "categories",
-                "{{category_id_del}}"
-              ]
-            },
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{token_admin}}",
-                  "type": "string"
-                }
-              ]
-            }
-          }
-        },
-        {
-          "name": "DELETE /categories tanpa id - 405",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test(\"Status 405\", () => pm.response.to.have.status(405));",
-                  "const j = pm.response.json();",
-                  "pm.test(\"success = false\", () => pm.expect(j.success).to.eql(false));",
-                  "pm.test(\"Bentuk response standar\", () => { pm.expect(j).to.have.property(\"message\"); pm.expect(j).to.have.property(\"errors\"); });"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "DELETE",
-            "header": [],
-            "url": {
-              "raw": "{{base_url}}/categories",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "categories"
-              ]
-            },
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{token_admin}}",
-                  "type": "string"
-                }
-              ]
-            }
-          }
+          ]
         }
       ]
     },
     {
-      "name": "2. Anggota 1 - Tasks",
+      "name": "2. Tasks (Anggota 1)",
       "item": [
+        {
+          "name": "SETUP - user 1 membuat kategori untuk dipakai tugas",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/categories",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "categories"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{user_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Kategori Setup Tugas\",\n  \"description\": \"Dibuat otomatis oleh folder Tasks\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 201\", () => pm.response.to.have.status(201));",
+                  "const j = pm.response.json();",
+                  "pm.test(\"Bentuk response standar sukses\", () => { pm.expect(j.success).to.eql(true); pm.expect(j).to.have.property(\"message\"); pm.expect(j).to.have.property(\"data\"); });",
+                  "pm.environment.set(\"category_id\", j.data.id);"
+                ]
+              }
+            }
+          ]
+        },
         {
           "name": "POST tugas (201)",
           "event": [
@@ -1587,8 +980,8 @@
                   "const j = pm.response.json();",
                   "pm.test(\"success = true\", () => pm.expect(j.success).to.eql(true));",
                   "pm.test(\"Bentuk response standar\", () => { pm.expect(j).to.have.property(\"message\"); pm.expect(j).to.have.property(\"data\"); });",
-                  "pm.test(\"user_id diisi dari token\", () => pm.expect(j.data.user_id).to.eql(Number(pm.collectionVariables.get(\"user_id\"))));",
-                  "pm.collectionVariables.set(\"task_id\", j.data.id);"
+                  "pm.test(\"user_id diisi dari token\", () => pm.expect(j.data.user_id).to.eql(Number(pm.environment.get(\"user_id\"))));",
+                  "pm.environment.set(\"task_id\", j.data.id);"
                 ]
               }
             }
@@ -1624,7 +1017,7 @@
               "bearer": [
                 {
                   "key": "token",
-                  "value": "{{token_user}}",
+                  "value": "{{user_token}}",
                   "type": "string"
                 }
               ]
@@ -1644,7 +1037,7 @@
                   "pm.test(\"success = true\", () => pm.expect(j.success).to.eql(true));",
                   "pm.test(\"Bentuk response standar\", () => { pm.expect(j).to.have.property(\"message\"); pm.expect(j).to.have.property(\"data\"); });",
                   "pm.test(\"status default pending\", () => pm.expect(j.data.status).to.eql(\"pending\"));",
-                  "pm.collectionVariables.set(\"task_id_del\", j.data.id);"
+                  "pm.environment.set(\"task_id_del\", j.data.id);"
                 ]
               }
             }
@@ -1680,7 +1073,7 @@
               "bearer": [
                 {
                   "key": "token",
-                  "value": "{{token_user}}",
+                  "value": "{{user_token}}",
                   "type": "string"
                 }
               ]
@@ -1735,7 +1128,7 @@
               "bearer": [
                 {
                   "key": "token",
-                  "value": "{{token_user}}",
+                  "value": "{{user_token}}",
                   "type": "string"
                 }
               ]
@@ -1790,7 +1183,7 @@
               "bearer": [
                 {
                   "key": "token",
-                  "value": "{{token_user2}}",
+                  "value": "{{user2_token}}",
                   "type": "string"
                 }
               ]
@@ -1832,7 +1225,7 @@
               "bearer": [
                 {
                   "key": "token",
-                  "value": "{{token_user}}",
+                  "value": "{{user_token}}",
                   "type": "string"
                 }
               ]
@@ -1879,7 +1272,7 @@
               "bearer": [
                 {
                   "key": "token",
-                  "value": "{{token_user}}",
+                  "value": "{{user_token}}",
                   "type": "string"
                 }
               ]
@@ -1920,7 +1313,7 @@
               "bearer": [
                 {
                   "key": "token",
-                  "value": "{{token_user2}}",
+                  "value": "{{user2_token}}",
                   "type": "string"
                 }
               ]
@@ -1960,7 +1353,7 @@
               "bearer": [
                 {
                   "key": "token",
-                  "value": "{{token_admin}}",
+                  "value": "{{admin_token}}",
                   "type": "string"
                 }
               ]
@@ -2003,7 +1396,7 @@
               "bearer": [
                 {
                   "key": "token",
-                  "value": "{{token_user}}",
+                  "value": "{{user_token}}",
                   "type": "string"
                 }
               ]
@@ -2044,7 +1437,7 @@
               "bearer": [
                 {
                   "key": "token",
-                  "value": "{{token_user}}",
+                  "value": "{{user_token}}",
                   "type": "string"
                 }
               ]
@@ -2085,7 +1478,7 @@
               "bearer": [
                 {
                   "key": "token",
-                  "value": "{{token_user}}",
+                  "value": "{{user_token}}",
                   "type": "string"
                 }
               ]
@@ -2126,7 +1519,7 @@
               "bearer": [
                 {
                   "key": "token",
-                  "value": "{{token_user2}}",
+                  "value": "{{user2_token}}",
                   "type": "string"
                 }
               ]
@@ -2215,7 +1608,7 @@
               "bearer": [
                 {
                   "key": "token",
-                  "value": "{{token_user}}",
+                  "value": "{{user_token}}",
                   "type": "string"
                 }
               ]
@@ -2270,7 +1663,7 @@
               "bearer": [
                 {
                   "key": "token",
-                  "value": "{{token_user}}",
+                  "value": "{{user_token}}",
                   "type": "string"
                 }
               ]
@@ -2325,7 +1718,7 @@
               "bearer": [
                 {
                   "key": "token",
-                  "value": "{{token_user}}",
+                  "value": "{{user_token}}",
                   "type": "string"
                 }
               ]
@@ -2380,7 +1773,7 @@
               "bearer": [
                 {
                   "key": "token",
-                  "value": "{{token_user}}",
+                  "value": "{{user_token}}",
                   "type": "string"
                 }
               ]
@@ -2421,7 +1814,7 @@
               "bearer": [
                 {
                   "key": "token",
-                  "value": "{{token_user}}",
+                  "value": "{{user_token}}",
                   "type": "string"
                 }
               ]
@@ -2496,7 +1889,7 @@
               "bearer": [
                 {
                   "key": "token",
-                  "value": "{{token_admin}}",
+                  "value": "{{admin_token}}",
                   "type": "string"
                 }
               ]
@@ -2537,7 +1930,7 @@
               "bearer": [
                 {
                   "key": "token",
-                  "value": "{{token_admin}}",
+                  "value": "{{admin_token}}",
                   "type": "string"
                 }
               ]
@@ -2577,7 +1970,7 @@
               "bearer": [
                 {
                   "key": "token",
-                  "value": "{{token_admin}}",
+                  "value": "{{admin_token}}",
                   "type": "string"
                 }
               ]
@@ -2587,7 +1980,892 @@
       ]
     },
     {
-      "name": "3. Anggota 3 - Notes",
+      "name": "3. Categories (Anggota 2)",
+      "item": [
+        {
+          "name": "POST kategori A (201)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 201\", () => pm.response.to.have.status(201));",
+                  "const j = pm.response.json();",
+                  "pm.test(\"success = true\", () => pm.expect(j.success).to.eql(true));",
+                  "pm.test(\"Bentuk response standar\", () => { pm.expect(j).to.have.property(\"message\"); pm.expect(j).to.have.property(\"data\"); });",
+                  "pm.environment.set(\"category_id\", j.data.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/categories",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "categories"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Kuliah {{$timestamp}}\",\n  \"description\": \"Tugas perkuliahan\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{user_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST kategori B untuk dihapus (201)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 201\", () => pm.response.to.have.status(201));",
+                  "const j = pm.response.json();",
+                  "pm.test(\"success = true\", () => pm.expect(j.success).to.eql(true));",
+                  "pm.test(\"Bentuk response standar\", () => { pm.expect(j).to.have.property(\"message\"); pm.expect(j).to.have.property(\"data\"); });",
+                  "pm.environment.set(\"category_id_del\", j.data.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/categories",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "categories"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Sementara {{$timestamp}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{user_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST kategori - 422 name kosong",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 422\", () => pm.response.to.have.status(422));",
+                  "const j = pm.response.json();",
+                  "pm.test(\"success = false\", () => pm.expect(j.success).to.eql(false));",
+                  "pm.test(\"Bentuk response standar\", () => { pm.expect(j).to.have.property(\"message\"); pm.expect(j).to.have.property(\"errors\"); });",
+                  "pm.test(\"errors berisi name\", () => pm.expect(j.errors).to.have.property(\"name\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/categories",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "categories"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{user_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "GET daftar kategori (200)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
+                  "const j = pm.response.json();",
+                  "pm.test(\"success = true\", () => pm.expect(j.success).to.eql(true));",
+                  "pm.test(\"Bentuk response standar\", () => { pm.expect(j).to.have.property(\"message\"); pm.expect(j).to.have.property(\"data\"); });",
+                  "pm.test(\"data array, ada tasks_count & user\", () => { pm.expect(j.data).to.be.an(\"array\"); pm.expect(j.data[0]).to.have.property(\"tasks_count\"); pm.expect(j.data[0]).to.have.property(\"user\"); });",
+                  "pm.test(\"Tidak ada data sensitif (password)\", () => pm.expect(pm.response.text()).to.not.include(\"password\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/categories",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "categories"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{user_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "GET kategori by id (200)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
+                  "const j = pm.response.json();",
+                  "pm.test(\"success = true\", () => pm.expect(j.success).to.eql(true));",
+                  "pm.test(\"Bentuk response standar\", () => { pm.expect(j).to.have.property(\"message\"); pm.expect(j).to.have.property(\"data\"); });",
+                  "pm.test(\"ada relasi tasks\", () => pm.expect(j.data).to.have.property(\"tasks\"));",
+                  "pm.test(\"Tidak ada data sensitif (password)\", () => pm.expect(pm.response.text()).to.not.include(\"password\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/categories/{{category_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "categories",
+                "{{category_id}}"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{user_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "GET kategori - 404 id tidak ada",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 404\", () => pm.response.to.have.status(404));",
+                  "const j = pm.response.json();",
+                  "pm.test(\"success = false\", () => pm.expect(j.success).to.eql(false));",
+                  "pm.test(\"Bentuk response standar\", () => { pm.expect(j).to.have.property(\"message\"); pm.expect(j).to.have.property(\"errors\"); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/categories/999999",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "categories",
+                "999999"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{user_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "GET kategori - 404 id bukan angka",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 404\", () => pm.response.to.have.status(404));",
+                  "const j = pm.response.json();",
+                  "pm.test(\"success = false\", () => pm.expect(j.success).to.eql(false));",
+                  "pm.test(\"Bentuk response standar\", () => { pm.expect(j).to.have.property(\"message\"); pm.expect(j).to.have.property(\"errors\"); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/categories/abc",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "categories",
+                "abc"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{user_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "GET kategori - 404 milik user lain",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 404\", () => pm.response.to.have.status(404));",
+                  "const j = pm.response.json();",
+                  "pm.test(\"success = false\", () => pm.expect(j.success).to.eql(false));",
+                  "pm.test(\"Bentuk response standar\", () => { pm.expect(j).to.have.property(\"message\"); pm.expect(j).to.have.property(\"errors\"); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/categories/{{category_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "categories",
+                "{{category_id}}"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{user2_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "description": "Kepemilikan data: user 2 tidak boleh melihat kategori milik user 1."
+          }
+        },
+        {
+          "name": "GET kategori - 401 tanpa token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 401\", () => pm.response.to.have.status(401));",
+                  "const j = pm.response.json();",
+                  "pm.test(\"success = false\", () => pm.expect(j.success).to.eql(false));",
+                  "pm.test(\"Bentuk response standar\", () => { pm.expect(j).to.have.property(\"message\"); pm.expect(j).to.have.property(\"errors\"); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/categories",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "categories"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        },
+        {
+          "name": "PATCH kategori (200)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
+                  "const j = pm.response.json();",
+                  "pm.test(\"success = true\", () => pm.expect(j.success).to.eql(true));",
+                  "pm.test(\"Bentuk response standar\", () => { pm.expect(j).to.have.property(\"message\"); pm.expect(j).to.have.property(\"data\"); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/categories/{{category_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "categories",
+                "{{category_id}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"description\": \"Deskripsi diubah lewat PATCH\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{user_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "PUT kategori (200)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
+                  "const j = pm.response.json();",
+                  "pm.test(\"success = true\", () => pm.expect(j.success).to.eql(true));",
+                  "pm.test(\"Bentuk response standar\", () => { pm.expect(j).to.have.property(\"message\"); pm.expect(j).to.have.property(\"data\"); });",
+                  "pm.environment.set(\"category_name\", j.data.name);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/categories/{{category_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "categories",
+                "{{category_id}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Kuliah (PUT) {{$timestamp}}\",\n  \"description\": \"Diubah lewat PUT\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{user_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST kategori - 422 nama duplikat",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 422\", () => pm.response.to.have.status(422));",
+                  "const j = pm.response.json();",
+                  "pm.test(\"success = false\", () => pm.expect(j.success).to.eql(false));",
+                  "pm.test(\"Bentuk response standar\", () => { pm.expect(j).to.have.property(\"message\"); pm.expect(j).to.have.property(\"errors\"); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/categories",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "categories"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"{{category_name}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{user_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "description": "Memakai nama kategori A terbaru (disimpan oleh request PUT kategori)."
+          }
+        },
+        {
+          "name": "PATCH kategori - 422 name melebihi 100 karakter",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 422\", () => pm.response.to.have.status(422));",
+                  "const j = pm.response.json();",
+                  "pm.test(\"success = false\", () => pm.expect(j.success).to.eql(false));",
+                  "pm.test(\"Bentuk response standar\", () => { pm.expect(j).to.have.property(\"message\"); pm.expect(j).to.have.property(\"errors\"); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/categories/{{category_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "categories",
+                "{{category_id}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{user_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "PATCH kategori - 404",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 404\", () => pm.response.to.have.status(404));",
+                  "const j = pm.response.json();",
+                  "pm.test(\"success = false\", () => pm.expect(j.success).to.eql(false));",
+                  "pm.test(\"Bentuk response standar\", () => { pm.expect(j).to.have.property(\"message\"); pm.expect(j).to.have.property(\"errors\"); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/categories/999999",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "categories",
+                "999999"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Tidak ada\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{user_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "DELETE kategori - 403 user biasa",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 403\", () => pm.response.to.have.status(403));",
+                  "const j = pm.response.json();",
+                  "pm.test(\"success = false\", () => pm.expect(j.success).to.eql(false));",
+                  "pm.test(\"Bentuk response standar\", () => { pm.expect(j).to.have.property(\"message\"); pm.expect(j).to.have.property(\"errors\"); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/categories/{{category_id_del}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "categories",
+                "{{category_id_del}}"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{user_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "DELETE kategori - 401 tanpa token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 401\", () => pm.response.to.have.status(401));",
+                  "const j = pm.response.json();",
+                  "pm.test(\"success = false\", () => pm.expect(j.success).to.eql(false));",
+                  "pm.test(\"Bentuk response standar\", () => { pm.expect(j).to.have.property(\"message\"); pm.expect(j).to.have.property(\"errors\"); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/categories/{{category_id_del}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "categories",
+                "{{category_id_del}}"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        },
+        {
+          "name": "DELETE kategori oleh admin (200)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
+                  "const j = pm.response.json();",
+                  "pm.test(\"success = true\", () => pm.expect(j.success).to.eql(true));",
+                  "pm.test(\"Bentuk response standar\", () => { pm.expect(j).to.have.property(\"message\"); pm.expect(j).to.have.property(\"data\"); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/categories/{{category_id_del}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "categories",
+                "{{category_id_del}}"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "DELETE kategori - 404 sudah terhapus",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 404\", () => pm.response.to.have.status(404));",
+                  "const j = pm.response.json();",
+                  "pm.test(\"success = false\", () => pm.expect(j.success).to.eql(false));",
+                  "pm.test(\"Bentuk response standar\", () => { pm.expect(j).to.have.property(\"message\"); pm.expect(j).to.have.property(\"errors\"); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/categories/{{category_id_del}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "categories",
+                "{{category_id_del}}"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "DELETE /categories tanpa id - 405",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 405\", () => pm.response.to.have.status(405));",
+                  "const j = pm.response.json();",
+                  "pm.test(\"success = false\", () => pm.expect(j.success).to.eql(false));",
+                  "pm.test(\"Bentuk response standar\", () => { pm.expect(j).to.have.property(\"message\"); pm.expect(j).to.have.property(\"errors\"); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/categories",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "categories"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "4. Notes (Anggota 3)",
       "item": [
         {
           "name": "POST catatan (201)",
@@ -2601,7 +2879,7 @@
                   "const j = pm.response.json();",
                   "pm.test(\"success = true\", () => pm.expect(j.success).to.eql(true));",
                   "pm.test(\"Bentuk response standar\", () => { pm.expect(j).to.have.property(\"message\"); pm.expect(j).to.have.property(\"data\"); });",
-                  "pm.collectionVariables.set(\"note_id\", j.data.id);"
+                  "pm.environment.set(\"note_id\", j.data.id);"
                 ]
               }
             }
@@ -2637,7 +2915,7 @@
               "bearer": [
                 {
                   "key": "token",
-                  "value": "{{token_user}}",
+                  "value": "{{user_token}}",
                   "type": "string"
                 }
               ]
@@ -2656,7 +2934,7 @@
                   "const j = pm.response.json();",
                   "pm.test(\"success = true\", () => pm.expect(j.success).to.eql(true));",
                   "pm.test(\"Bentuk response standar\", () => { pm.expect(j).to.have.property(\"message\"); pm.expect(j).to.have.property(\"data\"); });",
-                  "pm.collectionVariables.set(\"note_id_del\", j.data.id);"
+                  "pm.environment.set(\"note_id_del\", j.data.id);"
                 ]
               }
             }
@@ -2692,7 +2970,7 @@
               "bearer": [
                 {
                   "key": "token",
-                  "value": "{{token_user}}",
+                  "value": "{{user_token}}",
                   "type": "string"
                 }
               ]
@@ -2747,7 +3025,7 @@
               "bearer": [
                 {
                   "key": "token",
-                  "value": "{{token_user}}",
+                  "value": "{{user_token}}",
                   "type": "string"
                 }
               ]
@@ -2801,7 +3079,7 @@
               "bearer": [
                 {
                   "key": "token",
-                  "value": "{{token_user2}}",
+                  "value": "{{user2_token}}",
                   "type": "string"
                 }
               ]
@@ -2843,7 +3121,7 @@
               "bearer": [
                 {
                   "key": "token",
-                  "value": "{{token_user}}",
+                  "value": "{{user_token}}",
                   "type": "string"
                 }
               ]
@@ -2889,7 +3167,7 @@
               "bearer": [
                 {
                   "key": "token",
-                  "value": "{{token_user}}",
+                  "value": "{{user_token}}",
                   "type": "string"
                 }
               ]
@@ -2931,7 +3209,7 @@
               "bearer": [
                 {
                   "key": "token",
-                  "value": "{{token_user}}",
+                  "value": "{{user_token}}",
                   "type": "string"
                 }
               ]
@@ -2972,7 +3250,7 @@
               "bearer": [
                 {
                   "key": "token",
-                  "value": "{{token_user}}",
+                  "value": "{{user_token}}",
                   "type": "string"
                 }
               ]
@@ -3013,7 +3291,7 @@
               "bearer": [
                 {
                   "key": "token",
-                  "value": "{{token_user2}}",
+                  "value": "{{user2_token}}",
                   "type": "string"
                 }
               ]
@@ -3101,7 +3379,7 @@
               "bearer": [
                 {
                   "key": "token",
-                  "value": "{{token_user}}",
+                  "value": "{{user_token}}",
                   "type": "string"
                 }
               ]
@@ -3156,7 +3434,7 @@
               "bearer": [
                 {
                   "key": "token",
-                  "value": "{{token_user}}",
+                  "value": "{{user_token}}",
                   "type": "string"
                 }
               ]
@@ -3211,7 +3489,7 @@
               "bearer": [
                 {
                   "key": "token",
-                  "value": "{{token_user}}",
+                  "value": "{{user_token}}",
                   "type": "string"
                 }
               ]
@@ -3266,7 +3544,7 @@
               "bearer": [
                 {
                   "key": "token",
-                  "value": "{{token_user}}",
+                  "value": "{{user_token}}",
                   "type": "string"
                 }
               ]
@@ -3307,7 +3585,7 @@
               "bearer": [
                 {
                   "key": "token",
-                  "value": "{{token_user}}",
+                  "value": "{{user_token}}",
                   "type": "string"
                 }
               ]
@@ -3382,7 +3660,7 @@
               "bearer": [
                 {
                   "key": "token",
-                  "value": "{{token_admin}}",
+                  "value": "{{admin_token}}",
                   "type": "string"
                 }
               ]
@@ -3423,7 +3701,7 @@
               "bearer": [
                 {
                   "key": "token",
-                  "value": "{{token_admin}}",
+                  "value": "{{admin_token}}",
                   "type": "string"
                 }
               ]
@@ -3463,7 +3741,7 @@
               "bearer": [
                 {
                   "key": "token",
-                  "value": "{{token_admin}}",
+                  "value": "{{admin_token}}",
                   "type": "string"
                 }
               ]
@@ -3473,7 +3751,7 @@
       ]
     },
     {
-      "name": "4. Anggota 4 - Schedules",
+      "name": "5. Schedules (Anggota 4)",
       "item": [
         {
           "name": "POST jadwal (201)",
@@ -3487,7 +3765,7 @@
                   "const j = pm.response.json();",
                   "pm.test(\"success = true\", () => pm.expect(j.success).to.eql(true));",
                   "pm.test(\"Bentuk response standar\", () => { pm.expect(j).to.have.property(\"message\"); pm.expect(j).to.have.property(\"data\"); });",
-                  "pm.collectionVariables.set(\"schedule_id\", j.data.id);"
+                  "pm.environment.set(\"schedule_id\", j.data.id);"
                 ]
               }
             }
@@ -3523,7 +3801,7 @@
               "bearer": [
                 {
                   "key": "token",
-                  "value": "{{token_user}}",
+                  "value": "{{user_token}}",
                   "type": "string"
                 }
               ]
@@ -3542,7 +3820,7 @@
                   "const j = pm.response.json();",
                   "pm.test(\"success = true\", () => pm.expect(j.success).to.eql(true));",
                   "pm.test(\"Bentuk response standar\", () => { pm.expect(j).to.have.property(\"message\"); pm.expect(j).to.have.property(\"data\"); });",
-                  "pm.collectionVariables.set(\"schedule_id_del\", j.data.id);"
+                  "pm.environment.set(\"schedule_id_del\", j.data.id);"
                 ]
               }
             }
@@ -3578,7 +3856,7 @@
               "bearer": [
                 {
                   "key": "token",
-                  "value": "{{token_user}}",
+                  "value": "{{user_token}}",
                   "type": "string"
                 }
               ]
@@ -3633,7 +3911,7 @@
               "bearer": [
                 {
                   "key": "token",
-                  "value": "{{token_user}}",
+                  "value": "{{user_token}}",
                   "type": "string"
                 }
               ]
@@ -3688,7 +3966,7 @@
               "bearer": [
                 {
                   "key": "token",
-                  "value": "{{token_user}}",
+                  "value": "{{user_token}}",
                   "type": "string"
                 }
               ]
@@ -3742,7 +4020,7 @@
               "bearer": [
                 {
                   "key": "token",
-                  "value": "{{token_user2}}",
+                  "value": "{{user2_token}}",
                   "type": "string"
                 }
               ]
@@ -3784,7 +4062,7 @@
               "bearer": [
                 {
                   "key": "token",
-                  "value": "{{token_user}}",
+                  "value": "{{user_token}}",
                   "type": "string"
                 }
               ]
@@ -3830,7 +4108,7 @@
               "bearer": [
                 {
                   "key": "token",
-                  "value": "{{token_user}}",
+                  "value": "{{user_token}}",
                   "type": "string"
                 }
               ]
@@ -3872,7 +4150,7 @@
               "bearer": [
                 {
                   "key": "token",
-                  "value": "{{token_user}}",
+                  "value": "{{user_token}}",
                   "type": "string"
                 }
               ]
@@ -3913,7 +4191,7 @@
               "bearer": [
                 {
                   "key": "token",
-                  "value": "{{token_user}}",
+                  "value": "{{user_token}}",
                   "type": "string"
                 }
               ]
@@ -3954,7 +4232,7 @@
               "bearer": [
                 {
                   "key": "token",
-                  "value": "{{token_user2}}",
+                  "value": "{{user2_token}}",
                   "type": "string"
                 }
               ]
@@ -4042,7 +4320,7 @@
               "bearer": [
                 {
                   "key": "token",
-                  "value": "{{token_user}}",
+                  "value": "{{user_token}}",
                   "type": "string"
                 }
               ]
@@ -4097,7 +4375,7 @@
               "bearer": [
                 {
                   "key": "token",
-                  "value": "{{token_user}}",
+                  "value": "{{user_token}}",
                   "type": "string"
                 }
               ]
@@ -4152,7 +4430,7 @@
               "bearer": [
                 {
                   "key": "token",
-                  "value": "{{token_user}}",
+                  "value": "{{user_token}}",
                   "type": "string"
                 }
               ]
@@ -4207,7 +4485,7 @@
               "bearer": [
                 {
                   "key": "token",
-                  "value": "{{token_user}}",
+                  "value": "{{user_token}}",
                   "type": "string"
                 }
               ]
@@ -4248,7 +4526,7 @@
               "bearer": [
                 {
                   "key": "token",
-                  "value": "{{token_user}}",
+                  "value": "{{user_token}}",
                   "type": "string"
                 }
               ]
@@ -4323,7 +4601,7 @@
               "bearer": [
                 {
                   "key": "token",
-                  "value": "{{token_admin}}",
+                  "value": "{{admin_token}}",
                   "type": "string"
                 }
               ]
@@ -4364,7 +4642,7 @@
               "bearer": [
                 {
                   "key": "token",
-                  "value": "{{token_admin}}",
+                  "value": "{{admin_token}}",
                   "type": "string"
                 }
               ]
@@ -4404,7 +4682,7 @@
               "bearer": [
                 {
                   "key": "token",
-                  "value": "{{token_admin}}",
+                  "value": "{{admin_token}}",
                   "type": "string"
                 }
               ]
@@ -4414,7 +4692,1535 @@
       ]
     },
     {
-      "name": "5. [MANUAL] Uji 500 - matikan MySQL dulu",
+      "name": "6. Authorization dan Ownership",
+      "item": [
+        {
+          "name": "SETUP - user 2 membuat tugas",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/tasks",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "tasks"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{user2_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Tugas rahasia user 2\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 201\", () => pm.response.to.have.status(201));",
+                  "const j = pm.response.json();",
+                  "pm.test(\"Bentuk response standar sukses\", () => { pm.expect(j.success).to.eql(true); pm.expect(j).to.have.property(\"message\"); pm.expect(j).to.have.property(\"data\"); });",
+                  "pm.environment.set(\"task_id_user2\", j.data.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "SETUP - user 2 membuat catatan",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/notes",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "notes"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{user2_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"task_id\": {{task_id_user2}},\n  \"title\": \"Catatan user 2\",\n  \"content\": \"Isi rahasia\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 201\", () => pm.response.to.have.status(201));",
+                  "const j = pm.response.json();",
+                  "pm.test(\"Bentuk response standar sukses\", () => { pm.expect(j.success).to.eql(true); pm.expect(j).to.have.property(\"message\"); pm.expect(j).to.have.property(\"data\"); });",
+                  "pm.environment.set(\"note_id_user2\", j.data.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "SETUP - user 2 membuat jadwal",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/schedules",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "schedules"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{user2_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"task_id\": {{task_id_user2}},\n  \"schedule_date\": \"2026-12-11\",\n  \"start_time\": \"08:00\",\n  \"end_time\": \"10:00\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 201\", () => pm.response.to.have.status(201));",
+                  "const j = pm.response.json();",
+                  "pm.test(\"Bentuk response standar sukses\", () => { pm.expect(j.success).to.eql(true); pm.expect(j).to.have.property(\"message\"); pm.expect(j).to.have.property(\"data\"); });",
+                  "pm.environment.set(\"schedule_id_user2\", j.data.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "User 1 GET tugas milik user 2 - 404",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/tasks/{{task_id_user2}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "tasks",
+                "{{task_id_user2}}"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{user_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 404\", () => pm.response.to.have.status(404));",
+                  "const j = pm.response.json();",
+                  "pm.test(\"Bentuk response standar gagal\", () => { pm.expect(j.success).to.eql(false); pm.expect(j).to.have.property(\"message\"); pm.expect(j).to.have.property(\"errors\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "User 1 GET catatan milik user 2 - 404",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/notes/{{note_id_user2}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "notes",
+                "{{note_id_user2}}"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{user_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 404\", () => pm.response.to.have.status(404));",
+                  "const j = pm.response.json();",
+                  "pm.test(\"Bentuk response standar gagal\", () => { pm.expect(j.success).to.eql(false); pm.expect(j).to.have.property(\"message\"); pm.expect(j).to.have.property(\"errors\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "User 1 GET jadwal milik user 2 - 404",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/schedules/{{schedule_id_user2}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "schedules",
+                "{{schedule_id_user2}}"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{user_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 404\", () => pm.response.to.have.status(404));",
+                  "const j = pm.response.json();",
+                  "pm.test(\"Bentuk response standar gagal\", () => { pm.expect(j.success).to.eql(false); pm.expect(j).to.have.property(\"message\"); pm.expect(j).to.have.property(\"errors\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "User 1 PATCH tugas milik user 2 - 404",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/tasks/{{task_id_user2}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "tasks",
+                "{{task_id_user2}}"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{user_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Dibajak\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 404\", () => pm.response.to.have.status(404));",
+                  "const j = pm.response.json();",
+                  "pm.test(\"Bentuk response standar gagal\", () => { pm.expect(j.success).to.eql(false); pm.expect(j).to.have.property(\"message\"); pm.expect(j).to.have.property(\"errors\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "User 1 PATCH catatan milik user 2 - 404",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/notes/{{note_id_user2}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "notes",
+                "{{note_id_user2}}"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{user_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Dibajak\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 404\", () => pm.response.to.have.status(404));",
+                  "const j = pm.response.json();",
+                  "pm.test(\"Bentuk response standar gagal\", () => { pm.expect(j.success).to.eql(false); pm.expect(j).to.have.property(\"message\"); pm.expect(j).to.have.property(\"errors\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "User 1 PATCH jadwal milik user 2 - 404",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/schedules/{{schedule_id_user2}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "schedules",
+                "{{schedule_id_user2}}"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{user_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"end_time\": \"23:00\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 404\", () => pm.response.to.have.status(404));",
+                  "const j = pm.response.json();",
+                  "pm.test(\"Bentuk response standar gagal\", () => { pm.expect(j.success).to.eql(false); pm.expect(j).to.have.property(\"message\"); pm.expect(j).to.have.property(\"errors\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "User 1 GET daftar tugas - tidak memuat tugas user 2",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/tasks",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "tasks"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{user_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
+                  "const j = pm.response.json();",
+                  "pm.test(\"Bentuk response standar sukses\", () => { pm.expect(j.success).to.eql(true); pm.expect(j).to.have.property(\"message\"); pm.expect(j).to.have.property(\"data\"); });",
+                  "pm.test(\"tugas user 2 tidak muncul\", () => pm.expect(j.data.map(t => t.id)).to.not.include(Number(pm.environment.get(\"task_id_user2\"))));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "User 1 GET tasks?user_id=user 2 - filter tidak membocorkan data",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/tasks",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "tasks"
+              ],
+              "query": [
+                {
+                  "key": "user_id",
+                  "value": "{{user2_id}}"
+                }
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{user_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
+                  "const j = pm.response.json();",
+                  "pm.test(\"Bentuk response standar sukses\", () => { pm.expect(j.success).to.eql(true); pm.expect(j).to.have.property(\"message\"); pm.expect(j).to.have.property(\"data\"); });",
+                  "pm.test(\"tugas user 2 tidak muncul\", () => pm.expect(j.data.map(t => t.id)).to.not.include(Number(pm.environment.get(\"task_id_user2\"))));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "User 1 GET notes?task_id=tugas user 2 - kosong",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/notes",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "notes"
+              ],
+              "query": [
+                {
+                  "key": "task_id",
+                  "value": "{{task_id_user2}}"
+                }
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{user_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
+                  "const j = pm.response.json();",
+                  "pm.test(\"Bentuk response standar sukses\", () => { pm.expect(j.success).to.eql(true); pm.expect(j).to.have.property(\"message\"); pm.expect(j).to.have.property(\"data\"); });",
+                  "pm.test(\"daftar kosong\", () => pm.expect(j.data.length).to.eql(0));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "User 1 POST tugas dengan user_id user 2 - diabaikan",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/tasks",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "tasks"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{user_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Coba pindah pemilik\",\n  \"user_id\": \"{{user2_id}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 201\", () => pm.response.to.have.status(201));",
+                  "const j = pm.response.json();",
+                  "pm.test(\"Bentuk response standar sukses\", () => { pm.expect(j.success).to.eql(true); pm.expect(j).to.have.property(\"message\"); pm.expect(j).to.have.property(\"data\"); });",
+                  "pm.test(\"user_id tetap milik user 1\", () => pm.expect(j.data.user_id).to.eql(Number(pm.environment.get(\"user_id\"))));",
+                  "pm.environment.set(\"task_id_hijack\", j.data.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "User 1 PATCH tugas sendiri dengan user_id user 2 - diabaikan",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/tasks/{{task_id_hijack}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "tasks",
+                "{{task_id_hijack}}"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{user_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Masih milik saya\",\n  \"user_id\": \"{{user2_id}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
+                  "const j = pm.response.json();",
+                  "pm.test(\"Bentuk response standar sukses\", () => { pm.expect(j.success).to.eql(true); pm.expect(j).to.have.property(\"message\"); pm.expect(j).to.have.property(\"data\"); });",
+                  "pm.test(\"user_id tidak berubah\", () => pm.expect(j.data.user_id).to.eql(Number(pm.environment.get(\"user_id\"))));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "User 1 POST catatan ke tugas user 2 - 422",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/notes",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "notes"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{user_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"task_id\": {{task_id_user2}}, \"title\": \"Selundupan\", \"content\": \"x\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 422\", () => pm.response.to.have.status(422));",
+                  "const j = pm.response.json();",
+                  "pm.test(\"Bentuk response standar gagal\", () => { pm.expect(j.success).to.eql(false); pm.expect(j).to.have.property(\"message\"); pm.expect(j).to.have.property(\"errors\"); });",
+                  "pm.test(\"errors task_id\", () => pm.expect(j.errors).to.have.property(\"task_id\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "User 1 POST jadwal ke tugas user 2 - 422",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/schedules",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "schedules"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{user_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"task_id\": {{task_id_user2}}, \"schedule_date\": \"2026-12-12\", \"start_time\": \"08:00\", \"end_time\": \"09:00\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 422\", () => pm.response.to.have.status(422));",
+                  "const j = pm.response.json();",
+                  "pm.test(\"Bentuk response standar gagal\", () => { pm.expect(j.success).to.eql(false); pm.expect(j).to.have.property(\"message\"); pm.expect(j).to.have.property(\"errors\"); });",
+                  "pm.test(\"errors task_id\", () => pm.expect(j.errors).to.have.property(\"task_id\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "User 1 DELETE tugas milik sendiri - 403",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/tasks/{{task_id_hijack}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "tasks",
+                "{{task_id_hijack}}"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{user_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 403\", () => pm.response.to.have.status(403));",
+                  "const j = pm.response.json();",
+                  "pm.test(\"Bentuk response standar gagal\", () => { pm.expect(j.success).to.eql(false); pm.expect(j).to.have.property(\"message\"); pm.expect(j).to.have.property(\"errors\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "User 1 DELETE tugas user 2 - 403 (role dicek sebelum data)",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/tasks/{{task_id_user2}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "tasks",
+                "{{task_id_user2}}"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{user_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 403\", () => pm.response.to.have.status(403));",
+                  "const j = pm.response.json();",
+                  "pm.test(\"Bentuk response standar gagal\", () => { pm.expect(j.success).to.eql(false); pm.expect(j).to.have.property(\"message\"); pm.expect(j).to.have.property(\"errors\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "User 1 DELETE catatan user 2 - 403",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/notes/{{note_id_user2}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "notes",
+                "{{note_id_user2}}"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{user_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 403\", () => pm.response.to.have.status(403));",
+                  "const j = pm.response.json();",
+                  "pm.test(\"Bentuk response standar gagal\", () => { pm.expect(j.success).to.eql(false); pm.expect(j).to.have.property(\"message\"); pm.expect(j).to.have.property(\"errors\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "User 1 DELETE jadwal user 2 - 403",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/schedules/{{schedule_id_user2}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "schedules",
+                "{{schedule_id_user2}}"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{user_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 403\", () => pm.response.to.have.status(403));",
+                  "const j = pm.response.json();",
+                  "pm.test(\"Bentuk response standar gagal\", () => { pm.expect(j.success).to.eql(false); pm.expect(j).to.have.property(\"message\"); pm.expect(j).to.have.property(\"errors\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "User 1 DELETE kategori sendiri - 403",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/categories/{{category_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "categories",
+                "{{category_id}}"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{user_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 403\", () => pm.response.to.have.status(403));",
+                  "const j = pm.response.json();",
+                  "pm.test(\"Bentuk response standar gagal\", () => { pm.expect(j.success).to.eql(false); pm.expect(j).to.have.property(\"message\"); pm.expect(j).to.have.property(\"errors\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Admin GET tugas milik user 2 - 200",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/tasks/{{task_id_user2}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "tasks",
+                "{{task_id_user2}}"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
+                  "const j = pm.response.json();",
+                  "pm.test(\"Bentuk response standar sukses\", () => { pm.expect(j.success).to.eql(true); pm.expect(j).to.have.property(\"message\"); pm.expect(j).to.have.property(\"data\"); });",
+                  "pm.test(\"pemilik = user 2\", () => pm.expect(j.data.user_id).to.eql(Number(pm.environment.get(\"user2_id\"))));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Admin GET daftar tugas - melihat semua pengguna",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/tasks",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "tasks"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
+                  "const j = pm.response.json();",
+                  "pm.test(\"Bentuk response standar sukses\", () => { pm.expect(j.success).to.eql(true); pm.expect(j).to.have.property(\"message\"); pm.expect(j).to.have.property(\"data\"); });",
+                  "pm.test(\"memuat tugas user 2\", () => pm.expect(j.data.map(t => t.id)).to.include(Number(pm.environment.get(\"task_id_user2\"))));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Admin PATCH tugas user 2 - 200, pemilik tidak berubah",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/tasks/{{task_id_user2}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "tasks",
+                "{{task_id_user2}}"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Diubah admin\",\n  \"status\": \"in_progress\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
+                  "const j = pm.response.json();",
+                  "pm.test(\"Bentuk response standar sukses\", () => { pm.expect(j.success).to.eql(true); pm.expect(j).to.have.property(\"message\"); pm.expect(j).to.have.property(\"data\"); });",
+                  "pm.test(\"pemilik tetap user 2\", () => pm.expect(j.data.user_id).to.eql(Number(pm.environment.get(\"user2_id\"))));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Admin POST tugas dengan user_id user 1 - dibuat atas nama admin",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/tasks",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "tasks"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Tugas admin\",\n  \"user_id\": \"{{user_id}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 201\", () => pm.response.to.have.status(201));",
+                  "const j = pm.response.json();",
+                  "pm.test(\"Bentuk response standar sukses\", () => { pm.expect(j.success).to.eql(true); pm.expect(j).to.have.property(\"message\"); pm.expect(j).to.have.property(\"data\"); });",
+                  "pm.test(\"pemilik = admin\", () => pm.expect(j.data.user_id).to.eql(Number(pm.environment.get(\"admin_id\"))));",
+                  "pm.environment.set(\"task_id_admin\", j.data.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Admin DELETE jadwal user 2 - 200",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/schedules/{{schedule_id_user2}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "schedules",
+                "{{schedule_id_user2}}"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
+                  "const j = pm.response.json();",
+                  "pm.test(\"Bentuk response standar sukses\", () => { pm.expect(j.success).to.eql(true); pm.expect(j).to.have.property(\"message\"); pm.expect(j).to.have.property(\"data\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Admin DELETE catatan user 2 - 200",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/notes/{{note_id_user2}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "notes",
+                "{{note_id_user2}}"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
+                  "const j = pm.response.json();",
+                  "pm.test(\"Bentuk response standar sukses\", () => { pm.expect(j.success).to.eql(true); pm.expect(j).to.have.property(\"message\"); pm.expect(j).to.have.property(\"data\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Admin DELETE tugas user 2 - 200",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/tasks/{{task_id_user2}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "tasks",
+                "{{task_id_user2}}"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
+                  "const j = pm.response.json();",
+                  "pm.test(\"Bentuk response standar sukses\", () => { pm.expect(j.success).to.eql(true); pm.expect(j).to.have.property(\"message\"); pm.expect(j).to.have.property(\"data\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Admin DELETE tugas hasil uji - 200",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/tasks/{{task_id_hijack}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "tasks",
+                "{{task_id_hijack}}"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
+                  "const j = pm.response.json();",
+                  "pm.test(\"Bentuk response standar sukses\", () => { pm.expect(j.success).to.eql(true); pm.expect(j).to.have.property(\"message\"); pm.expect(j).to.have.property(\"data\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Admin DELETE tugas admin - 200",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/tasks/{{task_id_admin}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "tasks",
+                "{{task_id_admin}}"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
+                  "const j = pm.response.json();",
+                  "pm.test(\"Bentuk response standar sukses\", () => { pm.expect(j.success).to.eql(true); pm.expect(j).to.have.property(\"message\"); pm.expect(j).to.have.property(\"data\"); });"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "7. [MANUAL] Uji 500 - matikan MySQL dulu",
       "item": [
         {
           "name": "GET /tasks - 500 (Anggota 1)",
@@ -4450,7 +6256,7 @@
               "bearer": [
                 {
                   "key": "token",
-                  "value": "{{token_user}}",
+                  "value": "{{user_token}}",
                   "type": "string"
                 }
               ]
@@ -4491,7 +6297,7 @@
               "bearer": [
                 {
                   "key": "token",
-                  "value": "{{token_user}}",
+                  "value": "{{user_token}}",
                   "type": "string"
                 }
               ]
@@ -4532,7 +6338,7 @@
               "bearer": [
                 {
                   "key": "token",
-                  "value": "{{token_user}}",
+                  "value": "{{user_token}}",
                   "type": "string"
                 }
               ]
@@ -4573,7 +6379,7 @@
               "bearer": [
                 {
                   "key": "token",
-                  "value": "{{token_user}}",
+                  "value": "{{user_token}}",
                   "type": "string"
                 }
               ]

@@ -1,0 +1,96 @@
+INFO KELOMPOK 4
+Tugas Akhir Teknologi Sistem Terintegrasi (CIE61207)
+Task Management System - REST API Laravel 13 (JWT + RBAC)
+=====================================================================
+
+A. NAMA DATABASE
+----------------
+ta_tst
+(MySQL/MariaDB, collation utf8mb4_unicode_ci. Buat dulu di phpMyAdmin.
+ Pengaturan koneksi ada di file .env: DB_DATABASE=ta_tst, DB_USERNAME=root, DB_PASSWORD kosong)
+
+B. KREDENSIAL ADMIN
+-------------------
+Email    : admin@gmail.com
+Password : password
+Role     : admin
+
+C. KREDENSIAL USER
+------------------
+Email    : andi@example.com
+Password : password
+Role     : user
+
+(Kedua akun dibuat otomatis oleh: php artisan db:seed)
+
+D. DAFTAR ENDPOINT API
+----------------------
+Base URL : http://127.0.0.1:8000/api   (php artisan serve)
+Header   : Accept: application/json
+           Content-Type: application/json (untuk POST/PUT/PATCH)
+           Authorization: Bearer <access_token> (untuk endpoint yang butuh login)
+
+Keterangan hak akses:
+  Publik        = tanpa token
+  Login         = admin dan user (user hanya data miliknya sendiri)
+  Admin saja    = user biasa mendapat 403
+  Data milik user lain bagi user biasa dijawab 404 (keberadaannya tidak dibocorkan)
+
+--- Umum dan Autentikasi (tabel users) ---
+Method | URL                       | Fungsi                                      | Hak akses
+GET    | /api/ping                 | Memastikan API berjalan                     | Publik
+POST   | /api/register             | Registrasi (role selalu "user")             | Publik
+POST   | /api/login                | Login, mengembalikan access_token JWT       | Publik
+GET    | /api/me                   | Informasi akun yang sedang login            | Login
+POST   | /api/logout               | Logout, token masuk blacklist               | Login
+
+--- Tasks (Anggota 1) ---
+Method    | URL                | Fungsi                                              | Hak akses
+GET       | /api/tasks         | Daftar tugas. Filter: ?status= ?category_id=        | Login
+          |                    | ?user_id= (filter user_id hanya berlaku untuk admin)|
+POST      | /api/tasks         | Membuat tugas (user_id dari token)                  | Login
+GET       | /api/tasks/{id}    | Detail tugas + kategori, catatan, jadwal            | Login (pemilik / admin)
+PUT/PATCH | /api/tasks/{id}    | Memperbarui tugas                                   | Login (pemilik / admin)
+DELETE    | /api/tasks/{id}    | Menghapus tugas                                     | Admin saja
+Nilai status: pending | in_progress | completed
+
+--- Categories (Anggota 2) ---
+GET       | /api/categories        | Daftar kategori. Filter: ?search= (nama)        | Login
+POST      | /api/categories        | Membuat kategori (user_id dari token)           | Login
+GET       | /api/categories/{id}   | Detail kategori + daftar tugasnya               | Login (pemilik / admin)
+PUT/PATCH | /api/categories/{id}   | Memperbarui kategori                            | Login (pemilik / admin)
+DELETE    | /api/categories/{id}   | Menghapus kategori                              | Admin saja
+
+--- Notes (Anggota 3) ---
+GET       | /api/notes             | Daftar catatan. Filter: ?task_id=               | Login
+POST      | /api/notes             | Membuat catatan (task harus milik pembuat)      | Login
+GET       | /api/notes/{id}        | Detail catatan                                  | Login (pemilik / admin)
+PUT/PATCH | /api/notes/{id}        | Memperbarui catatan                             | Login (pemilik / admin)
+DELETE    | /api/notes/{id}        | Menghapus catatan                               | Admin saja
+
+--- Schedules (Anggota 4) ---
+GET       | /api/schedules         | Daftar jadwal. Filter: ?task_id= ?schedule_date=YYYY-MM-DD | Login
+POST      | /api/schedules         | Membuat jadwal (task harus milik pembuat)       | Login
+GET       | /api/schedules/{id}    | Detail jadwal                                   | Login (pemilik / admin)
+PUT/PATCH | /api/schedules/{id}    | Memperbarui jadwal (end_time harus > start_time)| Login (pemilik / admin)
+DELETE    | /api/schedules/{id}    | Menghapus jadwal                                | Admin saja
+
+Catatan:
+- Admin yang membuat data (POST) menjadi pemilik data tersebut. Admin yang memperbarui
+  data milik user tidak mengubah pemiliknya.
+- user_id tidak pernah diambil dari body request, selalu dari token.
+- Format response sukses : {"success": true, "message": "...", "data": ...}
+- Format response gagal  : {"success": false, "message": "...", "errors": ...}
+- Kode status: 200, 201, 401, 403, 404, 405, 422, 500.
+
+E. CARA MENJALANKAN (setelah ZIP diekstrak)
+-------------------------------------------
+1. composer install
+2. File .env sudah disertakan. Jika diganti, salin dari .env.example lalu jalankan
+   php artisan key:generate dan php artisan jwt:secret
+3. Buat database ta_tst di phpMyAdmin
+4. php artisan config:clear
+5. php artisan migrate:fresh --seed
+6. php artisan serve
+7. Import docs/TA-TST.postman_collection.json dan docs/TA-TST.postman_environment.json
+   ke Postman, pilih environment "TA-TST Local", lalu jalankan folder 0 sampai 6.
