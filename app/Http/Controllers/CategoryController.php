@@ -3,122 +3,152 @@
 namespace App\Http\Controllers;
 
 use App\Models\Category;
+use App\Traits\ApiResponse;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\QueryException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
-use Throwable;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\Rule;
 
+// ANGGOTA 2 - CRUD tabel categories
 class CategoryController extends Controller
 {
-    // READ user lihat miliknya, admin lihat semua
-    public function index(Request $request)
+    use ApiResponse;
+
+    // Kolom yang dipilih (tidak memakai SELECT *)
+    private const COLUMNS = ['id', 'user_id', 'name', 'description'];
+
+    // User biasa hanya melihat kategori miliknya; admin melihat semua
+    private function scoped(): Builder
+    {
+        return Category::query()->when(!$this->isAdmin(), function ($query) {
+            $query->where('user_id', $this->authUser()->id);
+        });
+    }
+
+    // GET /api/categories - beserta jumlah tugas per kategori (withCount)
+    public function index(Request $request): JsonResponse
     {
         try {
-            $user = $request->user();
+            $categories = $this->scoped()
+                ->select(self::COLUMNS) // select dulu, baru withCount (kalau terbalik, kolom tasks_count tertimpa)
+                ->with('user:id,name')
+                ->withCount('tasks')
+                ->when($request->query('search'), function ($query, $search) {
+                    $query->where('name', 'like', '%' . $search . '%');
+                })
+                ->latest('id')
+                ->get();
 
-            $categories = $user->isAdmin()
-                ? Category::with('user:id,name,email')->latest()->get()
-                : $user->categories()->latest()->get();
+            return $this->success($categories, 'Daftar kategori');
+        } catch (QueryException $e) {
+            Log::error('Gagal membaca daftar kategori: ' . $e->getMessage());
 
-            return response()->json([
-                'message' => 'Daftar kategori.',
-                'data'    => $categories,
+            return $this->error('Terjadi kesalahan pada database', 500);
+        }
+    }
+
+    // GET /api/categories/{id} - detail kategori beserta daftar tugasnya
+    public function show(string $id): JsonResponse
+    {
+        try {
+            $category = $this->scoped()
+                ->with([
+                    'user:id,name',
+                    'tasks:id,category_id,title,status,deadline',
+                ])
+                ->select(self::COLUMNS)
+                ->find($id);
+
+            if (!$category) {
+                return $this->error('Kategori tidak ditemukan', 404);
+            }
+
+            return $this->success($category, 'Detail kategori');
+        } catch (QueryException $e) {
+            Log::error('Gagal membaca detail kategori: ' . $e->getMessage());
+
+            return $this->error('Terjadi kesalahan pada database', 500);
+        }
+    }
+
+    // POST /api/categories
+    public function store(Request $request): JsonResponse
+    {
+        try {
+            $user = $this->authUser();
+
+            $validator = Validator::make($request->all(), [
+                // nama kategori unik per pengguna
+                'name'        => ['required', 'string', 'max:100', Rule::unique('categories', 'name')->where('user_id', $user->id)],
+                'description' => 'nullable|string',
             ]);
-        } catch (Throwable $e) {
-            return $this->serverError($e, 'Gagal mengambil daftar kategori.');
+
+            if ($validator->fails()) {
+                return $this->error('Data tidak valid', 422, $validator->errors());
+            }
+
+            // user_id diisi dari token, bukan dari input klien
+            $category = $user->categories()->create($validator->validated());
+
+            return $this->success($category, 'Kategori berhasil ditambahkan', 201);
+        } catch (QueryException $e) {
+            Log::error('Gagal menyimpan kategori: ' . $e->getMessage());
+
+            return $this->error('Terjadi kesalahan pada database', 500);
         }
     }
 
-    // CREATE
-    public function store(Request $request)
+    // PUT/PATCH /api/categories/{id}
+    public function update(Request $request, string $id): JsonResponse
     {
-        
-        $data = $request->validate([
-            'name'        => 'required|string|max:100',
-            'description' => 'nullable|string',
-        ]);
-
         try {
-            $category = $request->user()->categories()->create($data);
+            $category = $this->scoped()->find($id);
 
-            return response()->json([
-                'message' => 'Kategori berhasil ditambahkan.',
-                'data'    => $category,
-            ], 201);
-        } catch (Throwable $e) {
-            return $this->serverError($e, 'Gagal menambahkan kategori.');
-        }
-    }
+            if (!$category) {
+                return $this->error('Kategori tidak ditemukan', 404);
+            }
 
-    // READ
-    public function show(Request $request, Category $category)
-    {
-        // Otorisasi di luar try agar tetap menghasilkan 403
-        $this->authorizeOwner($request, $category);
-
-        try {
-            return response()->json([
-                'message' => 'Detail kategori.',
-                'data'    => $category->load('user:id,name,email'),
+            $validator = Validator::make($request->all(), [
+                'name'        => [
+                    'sometimes', 'required', 'string', 'max:100',
+                    Rule::unique('categories', 'name')->where('user_id', $category->user_id)->ignore($category->id),
+                ],
+                'description' => 'nullable|string',
             ]);
-        } catch (Throwable $e) {
-            return $this->serverError($e, 'Gagal mengambil detail kategori.');
+
+            if ($validator->fails()) {
+                return $this->error('Data tidak valid', 422, $validator->errors());
+            }
+
+            $category->update($validator->validated());
+
+            return $this->success($category, 'Kategori berhasil diubah');
+        } catch (QueryException $e) {
+            Log::error('Gagal mengubah kategori: ' . $e->getMessage());
+
+            return $this->error('Terjadi kesalahan pada database', 500);
         }
     }
 
-    // UPDATE
-    public function update(Request $request, Category $category)
-    {
-        $this->authorizeOwner($request, $category);
-
-        $data = $request->validate([
-            'name'        => 'sometimes|required|string|max:100',
-            'description' => 'nullable|string',
-        ]);
-
-        try {
-            $category->update($data);
-
-            return response()->json([
-                'message' => 'Kategori berhasil diperbarui.',
-                'data'    => $category,
-            ]);
-        } catch (Throwable $e) {
-            return $this->serverError($e, 'Gagal memperbarui kategori.');
-        }
-    }
-
-    // DELETE hanya admin dijaga middleware role:admin di route
-    public function destroy(Category $category)
+    // DELETE /api/categories/{id} (hanya admin, dijaga middleware role:admin di route)
+    // Tugas yang memakai kategori ini tidak ikut terhapus: category_id menjadi NULL (nullOnDelete)
+    public function destroy(string $id): JsonResponse
     {
         try {
-            $category->delete();
+            $deleted = $this->scoped()->whereKey($id)->delete();
 
-            return response()->json(['message' => 'Kategori berhasil dihapus.']);
-        } catch (Throwable $e) {
-            return $this->serverError($e, 'Gagal menghapus kategori.');
+            if ($deleted === 0) {
+                return $this->error('Kategori tidak ditemukan', 404);
+            }
+
+            return $this->success(null, 'Kategori berhasil dihapus');
+        } catch (QueryException $e) {
+            Log::error('Gagal menghapus kategori: ' . $e->getMessage());
+
+            return $this->error('Terjadi kesalahan pada database', 500);
         }
-    }
-
-    // User biasa hanya boleh akses miliknya sendiri, admin boleh semua
-    private function authorizeOwner(Request $request, Category $category): void
-    {
-        $user = $request->user();
-
-        if (! $user->isAdmin() && $category->user_id !== $user->id) {
-            abort(403, 'Anda tidak memiliki akses ke kategori ini.');
-        }
-    }
-
-    // Catat error asli ke log, kirim pesan aman ke client
-    private function serverError(Throwable $e, string $message): JsonResponse
-    {
-        Log::error($message, [
-            'error' => $e->getMessage(),
-            'file'  => $e->getFile(),
-            'line'  => $e->getLine(),
-        ]);
-
-        return response()->json(['message' => $message], 500);
     }
 }

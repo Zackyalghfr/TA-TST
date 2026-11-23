@@ -1,0 +1,46 @@
+erDiagram
+    USERS ||--o{ CATEGORIES : "memiliki"
+    USERS ||--o{ TASKS : "memiliki"
+    USERS ||--o{ NOTES : "memiliki"
+    USERS ||--o{ SCHEDULES : "memiliki"
+    CATEGORIES ||--o{ TASKS : "mengelompokkan"
+    TASKS ||--o{ NOTES : "memiliki"
+    TASKS ||--o{ SCHEDULES : "dijadwalkan"
+
+    USERS {
+        bigint id PK
+        string name
+        string email UK
+        string password
+        enum role "user | admin"
+    }
+    CATEGORIES {
+        bigint id PK
+        bigint user_id FK
+        string name
+        text description
+    }
+    TASKS {
+        bigint id PK
+        bigint user_id FK
+        bigint category_id FK "nullable"
+        string title
+        text description
+        string status "pending | in_progress | completed"
+        datetime deadline
+    }
+    NOTES {
+        bigint id PK
+        bigint user_id FK
+        bigint task_id FK
+        string title
+        text content
+    }
+    SCHEDULES {
+        bigint id PK
+        bigint user_id FK
+        bigint task_id FK
+        date schedule_date
+        time start_time
+        time end_time
+    }

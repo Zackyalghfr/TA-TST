@@ -3,65 +3,109 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
+use App\Traits\ApiResponse;
+use Illuminate\Database\QueryException;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Validator;
 
+// Bersama: satu AuthController untuk seluruh kelompok (tabel users)
 class AuthController extends Controller
 {
-    public function register(Request $request)
+    use ApiResponse;
+
+    // POST /api/register (terbuka)
+    public function register(Request $request): JsonResponse
     {
-        $data = $request->validate([
-            'name'     => 'required|string|max:100',
-            'email'    => 'required|email|unique:users,email',
-            'password' => 'required|string|min:8|confirmed',
-        ]);
+        try {
+            $validator = Validator::make($request->all(), [
+                'name'     => 'required|string|max:100',
+                'email'    => 'required|email|max:255|unique:users,email',
+                'password' => 'required|string|min:8|confirmed',
+            ]);
 
-        $user = User::create([
-            'name'     => $data['name'],
-            'email'    => $data['email'],
-            'password' => $data['password'],
-            'role'     => 'user',
-        ]);
+            if ($validator->fails()) {
+                return $this->error('Data tidak valid', 422, $validator->errors());
+            }
 
-        $token = $user->createToken('api-token')->plainTextToken;
+            $data = $validator->validated();
 
-        return response()->json([
-            'message' => 'Registrasi berhasil.',
-            'user'    => $user,
-            'token'   => $token,
-        ], 201);
-    }
+            // role TIDAK diambil dari input: pendaftar publik selalu "user"
+            $user = User::create([
+                'name'     => $data['name'],
+                'email'    => $data['email'],
+                'password' => $data['password'], // di-hash otomatis oleh cast "hashed"
+                'role'     => 'user',
+            ]);
 
-    public function login(Request $request)
-    {
-        $credentials = $request->validate([
-            'email'    => 'required|email',
-            'password' => 'required|string',
-        ]);
+            $token = auth('api')->login($user);
 
-        if (! Auth::attempt($credentials)) {
-            return response()->json(['message' => 'Email atau password salah.'], 401);
+            return $this->success([
+                'user'         => $user->only('id', 'name', 'email', 'role'),
+                'access_token' => $token,
+                'token_type'   => 'Bearer',
+                'expires_in'   => auth('api')->factory()->getTTL() * 60,
+            ], 'Registrasi berhasil', 201);
+        } catch (QueryException $e) {
+            Log::error('Gagal registrasi: ' . $e->getMessage());
+
+            return $this->error('Terjadi kesalahan pada database', 500);
         }
-
-        $user  = Auth::user();
-        $token = $user->createToken('api-token')->plainTextToken;
-
-        return response()->json([
-            'message' => 'Login berhasil.',
-            'user'    => $user,
-            'token'   => $token,
-        ]);
     }
 
-    public function me(Request $request)
+    // POST /api/login (terbuka)
+    public function login(Request $request): JsonResponse
     {
-        return response()->json($request->user());
+        try {
+            $validator = Validator::make($request->all(), [
+                'email'    => 'required|email',
+                'password' => 'required|string',
+            ]);
+
+            if ($validator->fails()) {
+                return $this->error('Data tidak valid', 422, $validator->errors());
+            }
+
+            $token = auth('api')->attempt($validator->validated());
+
+            // Pesan sama untuk email salah maupun password salah
+            if (!$token) {
+                return $this->error('Email atau password salah', 401);
+            }
+
+            return $this->success([
+                'access_token' => $token,
+                'token_type'   => 'Bearer',
+                'expires_in'   => auth('api')->factory()->getTTL() * 60,
+            ], 'Login berhasil');
+        } catch (QueryException $e) {
+            Log::error('Gagal login: ' . $e->getMessage());
+
+            return $this->error('Terjadi kesalahan pada database', 500);
+        }
     }
 
-    public function logout(Request $request)
+    // GET /api/me (auth:api)
+    public function me(): JsonResponse
     {
-        $request->user()->currentAccessToken()->delete();
+        return $this->success(
+            auth('api')->user()->only('id', 'name', 'email', 'role'),
+            'Profil pengguna'
+        );
+    }
 
-        return response()->json(['message' => 'Logout berhasil.']);
+    // POST /api/logout (auth:api) - token dimasukkan ke blacklist
+    public function logout(): JsonResponse
+    {
+        try {
+            auth('api')->logout();
+
+            return $this->success(null, 'Logout berhasil');
+        } catch (\Throwable $e) {
+            Log::error('Gagal logout: ' . $e->getMessage());
+
+            return $this->error('Gagal logout', 500);
+        }
     }
 }
