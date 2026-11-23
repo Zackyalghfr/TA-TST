@@ -12,15 +12,12 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
 
-// ANGGOTA 2 - CRUD tabel categories
 class CategoryController extends Controller
 {
     use ApiResponse;
 
-    // Kolom yang dipilih (tidak memakai SELECT *)
     private const COLUMNS = ['id', 'user_id', 'name', 'description'];
 
-    // User biasa hanya melihat kategori miliknya; admin melihat semua
     private function scoped(): Builder
     {
         return Category::query()->when(!$this->isAdmin(), function ($query) {
@@ -28,12 +25,11 @@ class CategoryController extends Controller
         });
     }
 
-    // GET /api/categories - beserta jumlah tugas per kategori (withCount)
     public function index(Request $request): JsonResponse
     {
         try {
             $categories = $this->scoped()
-                ->select(self::COLUMNS) // select dulu, baru withCount (kalau terbalik, kolom tasks_count tertimpa)
+                ->select(self::COLUMNS) 
                 ->with('user:id,name')
                 ->withCount('tasks')
                 ->when($request->query('search'), function ($query, $search) {
@@ -50,7 +46,6 @@ class CategoryController extends Controller
         }
     }
 
-    // GET /api/categories/{id} - detail kategori beserta daftar tugasnya
     public function show(string $id): JsonResponse
     {
         try {
@@ -74,14 +69,12 @@ class CategoryController extends Controller
         }
     }
 
-    // POST /api/categories
     public function store(Request $request): JsonResponse
     {
         try {
             $user = $this->authUser();
 
             $validator = Validator::make($request->all(), [
-                // nama kategori unik per pengguna
                 'name'        => ['required', 'string', 'max:100', Rule::unique('categories', 'name')->where('user_id', $user->id)],
                 'description' => 'nullable|string',
             ]);
@@ -90,7 +83,6 @@ class CategoryController extends Controller
                 return $this->error('Data tidak valid', 422, $validator->errors());
             }
 
-            // user_id diisi dari token, bukan dari input klien
             $category = $user->categories()->create($validator->validated());
 
             return $this->success($category, 'Kategori berhasil ditambahkan', 201);
@@ -101,7 +93,6 @@ class CategoryController extends Controller
         }
     }
 
-    // PUT/PATCH /api/categories/{id}
     public function update(Request $request, string $id): JsonResponse
     {
         try {
@@ -133,8 +124,6 @@ class CategoryController extends Controller
         }
     }
 
-    // DELETE /api/categories/{id} (hanya admin, dijaga middleware role:admin di route)
-    // Tugas yang memakai kategori ini tidak ikut terhapus: category_id menjadi NULL (nullOnDelete)
     public function destroy(string $id): JsonResponse
     {
         try {

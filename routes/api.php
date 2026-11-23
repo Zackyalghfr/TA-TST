@@ -7,11 +7,7 @@ use App\Http\Controllers\ScheduleController;
 use App\Http\Controllers\TaskController;
 use Illuminate\Support\Facades\Route;
 
-/*
-|--------------------------------------------------------------------------
-| Rute terbuka (tanpa token)
-|--------------------------------------------------------------------------
-*/
+
 Route::get('/ping', function () {
     return ['message' => 'API Laravel berjalan'];
 });
@@ -19,14 +15,7 @@ Route::get('/ping', function () {
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
 
-/*
-|--------------------------------------------------------------------------
-| Rute terlindungi: wajib token JWT (auth:api) -> tanpa/salah token = 401
-|--------------------------------------------------------------------------
-| Matriks hak akses (RBAC):
-|   GET, POST, PUT/PATCH : admin dan user (user hanya melihat/mengubah data miliknya)
-|   DELETE               : hanya admin (role:admin) -> user biasa = 403
-*/
+
 Route::middleware('auth:api')->group(function () {
 
     Route::get('/me', [AuthController::class, 'me']);
